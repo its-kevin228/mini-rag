@@ -1,0 +1,35 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama # Persistance pour ne pas retélécharger les modèles
+
+  vectordb:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: dev
+      POSTGRES_DB: rag
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://dev:dev@vectordb:5432/rag
+      - OLLAMA_URL=http://ollama:11434
+    volumes:
+      - .:/app # Montage en direct pour voir tes modifications de code sans rebuild
+    depends_on:
+      - ollama
+      - vectordb
+
+volumes:
+  ollama_models:
+  pgdata:
